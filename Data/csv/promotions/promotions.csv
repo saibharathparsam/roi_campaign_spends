@@ -1,0 +1,4 @@
+promotion_id,product_id,promotion_name,discount_pct,start_date,end_date
+PR001,P101,Coffee Maker Summer Event,20%,2026-09-01,2026-09-07
+PR002,P102,Running Shoes Weekend Offer,15%,2026-09-01,2026-09-07
+PR003,P103,Backpack Clearance,30%,2026-09-01,2026-09-07

@@ -1,0 +1,4 @@
+product_id,product_name,category,regular_price,gross_margin_pct
+P101,Coffee Maker,Kitchen,$80,35.0%
+P102,Running Shoes,Sports,$120,45.0%
+P103,Backpack,Accessories,$50,40.0%
