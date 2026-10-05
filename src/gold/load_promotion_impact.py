@@ -123,12 +123,8 @@ promotion_with_metrics = (
     )
     .withColumn(
         "incremental_gross_profit",
-        F.col("incremental_units")
-        * F.col("regular_price")
-        * (
-            F.lit(1.0)
-            - (F.col("discount_pct") / F.lit(100.0))
-        ),
+        F.col("incremental_revenue")
+        * (F.col("gross_margin_pct") / F.lit(100.0)),
     )
     .withColumn(
         "revenue_uplift_pct",
@@ -169,6 +165,19 @@ promotion_with_metrics = (
             F.lit("MEDIUM"),
         )
         .otherwise(F.lit("LOW")),
+    )
+    .withColumn("discount_pct", F.round("discount_pct", 2))
+    .withColumn(
+        "gross_margin_pct",
+        F.round("gross_margin_pct", 2),
+    )
+    .withColumn(
+        "revenue_uplift_pct",
+        F.round("revenue_uplift_pct", 2),
+    )
+    .withColumn(
+        "unit_uplift_pct",
+        F.round("unit_uplift_pct", 2),
     )
     .withColumn("gold_ingested_at", F.current_timestamp())
     .select(
