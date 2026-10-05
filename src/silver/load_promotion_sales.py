@@ -66,13 +66,15 @@ spark_session.sql(
         promotion.promotion_name,
         s.units_sold,
         s.revenue,
+        (product.regular_price * s.units_sold) - s.revenue
+            AS discount_amount,
         CAST(NULL AS STRING) AS promotion,
         current_timestamp() AS silver_ingested_at
     FROM {source_sales_table} AS s
     LEFT JOIN {source_product_table} AS product
         ON s.product_id = product.product_id
     LEFT JOIN {source_promotions_table} AS promotion
-        ON s.promotion_id = promotion.promotion_id
+        ON s.product_id = promotion.product_id
         AND s.sale_date BETWEEN promotion.start_date AND promotion.end_date
     WHERE 1 = 0
     """
@@ -157,6 +159,11 @@ def merge_promotion_sales_batch(
             F.col("promotion.discount_pct").alias("discount_pct"),
             F.col("sales.units_sold").alias("units_sold"),
             F.col("sales.revenue").alias("revenue"),
+            (
+                F.col("product.regular_price")
+                * F.col("sales.units_sold")
+                - F.col("sales.revenue")
+            ).alias("discount_amount"),
             F.when(
                 F.col("promotion.promotion_id").isNotNull(),
                 F.lit("Promotion"),
