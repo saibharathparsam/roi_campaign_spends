@@ -1,0 +1,637 @@
+{
+  "datasets": [
+    {
+      "name": "promotion_impact",
+      "displayName": "Promotion Impact",
+      "config": {
+        "version": "1.1",
+        "source": "retail_demo.gold.promotion_impact",
+        "dimensions": [
+          {
+            "name": "promotion_name",
+            "expr": "promotion_name",
+            "displayName": "Promotion Name"
+          },
+          {
+            "name": "promotion_effectiveness",
+            "expr": "promotion_effectiveness",
+            "displayName": "Promotion Effectiveness"
+          }
+        ],
+        "measures": [
+          {
+            "name": "total_promotion_investment",
+            "expr": "SUM(promotion_investment)",
+            "displayName": "Total Promotion Investment",
+            "format": {
+              "type": "currency",
+              "currencyCode": "USD",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_revenue_uplift_pct",
+            "expr": "AVG(revenue_uplift_pct)",
+            "displayName": "Avg Revenue Uplift %",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_unit_uplift_pct",
+            "expr": "AVG(unit_uplift_pct)",
+            "displayName": "Avg Unit Uplift %",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "promotion_sales",
+      "displayName": "Promotion Sales",
+      "config": {
+        "version": "1.1",
+        "source": "retail_demo.silver.promotion_sales",
+        "dimensions": [
+          {
+            "name": "sale_month",
+            "expr": "DATE_TRUNC('MONTH', sale_date)",
+            "displayName": "Sale Month",
+            "format": {
+              "type": "date",
+              "dateFormat": "locale_short_month"
+            }
+          },
+          {
+            "name": "product_name",
+            "expr": "product_name",
+            "displayName": "Product Name"
+          }
+        ],
+        "measures": [
+          {
+            "name": "total_sales",
+            "expr": "SUM(revenue)",
+            "displayName": "Total Sales",
+            "format": {
+              "type": "currency",
+              "currencyCode": "USD",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "total_units_sold",
+            "expr": "SUM(units_sold)",
+            "displayName": "Total Units Sold",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "pages": [
+    {
+      "name": "cb4fcd74",
+      "displayName": "promotion effectiveness",
+      "layout": [
+        {
+          "widget": {
+            "name": "total_investment_counter",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "promotion_impact",
+                  "fields": [
+                    {
+                      "name": "measure(total_promotion_investment)",
+                      "expression": "MEASURE(`total_promotion_investment`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Total Promotion Investment"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(total_promotion_investment)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "revenue_uplift_bar",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "promotion_impact",
+                  "fields": [
+                    {
+                      "name": "promotion_name",
+                      "expression": "`promotion_name`"
+                    },
+                    {
+                      "name": "measure(avg_revenue_uplift_pct)",
+                      "expression": "MEASURE(`avg_revenue_uplift_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Revenue Uplift % by Promotion"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "promotion_name",
+                  "displayName": "promotion_name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_revenue_uplift_pct)",
+                  "displayName": "avg_revenue_uplift_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "promotion_name",
+                  "displayName": "promotion_name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "unit_uplift_bar",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "promotion_impact",
+                  "fields": [
+                    {
+                      "name": "promotion_name",
+                      "expression": "`promotion_name`"
+                    },
+                    {
+                      "name": "measure(avg_unit_uplift_pct)",
+                      "expression": "MEASURE(`avg_unit_uplift_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Unit Uplift % by Promotion"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "promotion_name",
+                  "displayName": "promotion_name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_unit_uplift_pct)",
+                  "displayName": "avg_unit_uplift_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "promotion_name",
+                  "displayName": "promotion_name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "promotion_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "promotion_impact",
+                  "fields": [
+                    {
+                      "name": "promotion_name",
+                      "expression": "`promotion_name`"
+                    },
+                    {
+                      "name": "measure(total_promotion_investment)",
+                      "expression": "MEASURE(`total_promotion_investment`)"
+                    },
+                    {
+                      "name": "measure(avg_revenue_uplift_pct)",
+                      "expression": "MEASURE(`avg_revenue_uplift_pct`)"
+                    },
+                    {
+                      "name": "measure(avg_unit_uplift_pct)",
+                      "expression": "MEASURE(`avg_unit_uplift_pct`)"
+                    },
+                    {
+                      "name": "promotion_effectiveness",
+                      "expression": "`promotion_effectiveness`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Promotion Effectiveness Summary"
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "promotion_name"
+                  },
+                  {
+                    "fieldName": "measure(total_promotion_investment)"
+                  },
+                  {
+                    "fieldName": "measure(avg_revenue_uplift_pct)"
+                  },
+                  {
+                    "fieldName": "measure(avg_unit_uplift_pct)"
+                  },
+                  {
+                    "fieldName": "promotion_effectiveness"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 12,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "a8448659",
+      "displayName": "sales",
+      "layout": [
+        {
+          "widget": {
+            "name": "total_sales_line",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "promotion_sales",
+                  "fields": [
+                    {
+                      "name": "product_name",
+                      "expression": "`product_name`"
+                    },
+                    {
+                      "name": "sale_month",
+                      "expression": "`sale_month`"
+                    },
+                    {
+                      "name": "measure(total_sales)",
+                      "expression": "MEASURE(`total_sales`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Total Sales by Month & Product"
+              },
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "sale_month",
+                  "displayName": "sale_month",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(total_sales)",
+                  "displayName": "total_sales",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "product_name",
+                  "displayName": "product_name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "units_sold_line",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "promotion_sales",
+                  "fields": [
+                    {
+                      "name": "product_name",
+                      "expression": "`product_name`"
+                    },
+                    {
+                      "name": "sale_month",
+                      "expression": "`sale_month`"
+                    },
+                    {
+                      "name": "measure(total_units_sold)",
+                      "expression": "MEASURE(`total_units_sold`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Units Sold by Month & Product"
+              },
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "sale_month",
+                  "displayName": "sale_month",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(total_units_sold)",
+                  "displayName": "total_units_sold",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "product_name",
+                  "displayName": "product_name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "sales_units_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "promotion_sales",
+                  "fields": [
+                    {
+                      "name": "sale_month",
+                      "expression": "`sale_month`"
+                    },
+                    {
+                      "name": "product_name",
+                      "expression": "`product_name`"
+                    },
+                    {
+                      "name": "measure(total_sales)",
+                      "expression": "MEASURE(`total_sales`)"
+                    },
+                    {
+                      "name": "measure(total_units_sold)",
+                      "expression": "MEASURE(`total_units_sold`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Sales & Units by Month and Product"
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "sale_month"
+                  },
+                  {
+                    "fieldName": "product_name"
+                  },
+                  {
+                    "fieldName": "measure(total_sales)"
+                  },
+                  {
+                    "fieldName": "measure(total_units_sold)"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "monthly_revenue_line",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "promotion_sales",
+                  "fields": [
+                    {
+                      "name": "sale_month",
+                      "expression": "`sale_month`"
+                    },
+                    {
+                      "name": "measure(total_sales)",
+                      "expression": "MEASURE(`total_sales`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Monthly Revenue Trend"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "sale_month",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(total_sales)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 12,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}

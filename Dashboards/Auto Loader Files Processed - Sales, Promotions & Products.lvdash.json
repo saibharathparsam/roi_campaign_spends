@@ -1,0 +1,581 @@
+{
+  "datasets": [
+    {
+      "name": "autoloader_metadata",
+      "displayName": "Auto Loader File Metadata",
+      "queryLines": [
+        "SELECT\n",
+        "  'sales' AS source,\n",
+        "  path,\n",
+        "  size,\n",
+        "  create_time,\n",
+        "  discovery_time,\n",
+        "  processed_time,\n",
+        "  commit_time,\n",
+        "  ingestion_state\n",
+        "FROM\n",
+        "  cloud_files_state('/Volumes/retail_demo/bronze/raw_data/_autoloader/sales/checkpoint')\n",
+        "UNION ALL\n",
+        "SELECT\n",
+        "  'promotions' AS source,\n",
+        "  path,\n",
+        "  size,\n",
+        "  create_time,\n",
+        "  discovery_time,\n",
+        "  processed_time,\n",
+        "  commit_time,\n",
+        "  ingestion_state\n",
+        "FROM\n",
+        "  cloud_files_state('/Volumes/retail_demo/bronze/raw_data/_autoloader/promotions/checkpoint')\n",
+        "UNION ALL\n",
+        "SELECT\n",
+        "  'product' AS source,\n",
+        "  path,\n",
+        "  size,\n",
+        "  create_time,\n",
+        "  discovery_time,\n",
+        "  processed_time,\n",
+        "  commit_time,\n",
+        "  ingestion_state\n",
+        "FROM\n",
+        "  cloud_files_state('/Volumes/retail_demo/bronze/raw_data/_autoloader/product/checkpoint')"
+      ]
+    },
+    {
+      "name": "latest_per_source",
+      "displayName": "Latest Processing Per Source",
+      "queryLines": [
+        "SELECT\n",
+        "  source,\n",
+        "  MAX(processed_time) AS latest_processed_time,\n",
+        "  MAX(commit_time) AS latest_commit_time,\n",
+        "  COUNT(path) AS total_files,\n",
+        "  SUM(size) AS total_size_bytes\n",
+        "FROM\n",
+        "  (\n",
+        "    SELECT\n",
+        "      'sales' AS source,\n",
+        "      path,\n",
+        "      size,\n",
+        "      processed_time,\n",
+        "      commit_time,\n",
+        "      ingestion_state\n",
+        "    FROM\n",
+        "      cloud_files_state('/Volumes/retail_demo/bronze/raw_data/_autoloader/sales/checkpoint')\n",
+        "    UNION ALL\n",
+        "    SELECT\n",
+        "      'promotions' AS source,\n",
+        "      path,\n",
+        "      size,\n",
+        "      processed_time,\n",
+        "      commit_time,\n",
+        "      ingestion_state\n",
+        "    FROM\n",
+        "      cloud_files_state('/Volumes/retail_demo/bronze/raw_data/_autoloader/promotions/checkpoint')\n",
+        "    UNION ALL\n",
+        "    SELECT\n",
+        "      'product' AS source,\n",
+        "      path,\n",
+        "      size,\n",
+        "      processed_time,\n",
+        "      commit_time,\n",
+        "      ingestion_state\n",
+        "    FROM\n",
+        "      cloud_files_state('/Volumes/retail_demo/bronze/raw_data/_autoloader/product/checkpoint')\n",
+        "  )\n",
+        "GROUP BY\n",
+        "  source"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "0f0cfeb3",
+      "displayName": "Raw files processing",
+      "layout": [
+        {
+          "widget": {
+            "name": "files_by_source",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "autoloader_metadata",
+                  "fields": [
+                    {
+                      "name": "source",
+                      "expression": "`source`"
+                    },
+                    {
+                      "name": "count(path)",
+                      "expression": "COUNT(`path`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Files Processed by Source"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "source",
+                  "displayName": "source",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "count(path)",
+                  "displayName": "path",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "source",
+                  "displayName": "source",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "files_over_time",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "autoloader_metadata",
+                  "fields": [
+                    {
+                      "name": "source",
+                      "expression": "`source`"
+                    },
+                    {
+                      "name": "daily(processed_time)",
+                      "expression": "DATE_TRUNC(\"DAY\", `processed_time`)"
+                    },
+                    {
+                      "name": "count(path)",
+                      "expression": "COUNT(`path`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Files Processed Over Time",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "daily(processed_time)",
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "count(path)",
+                  "displayName": "Files",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "source",
+                  "displayName": "source",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 12,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "latest_per_source",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "latest_per_source",
+                  "fields": [
+                    {
+                      "name": "source",
+                      "expression": "`source`"
+                    },
+                    {
+                      "name": "latest_processed_time",
+                      "expression": "`latest_processed_time`"
+                    },
+                    {
+                      "name": "latest_commit_time",
+                      "expression": "`latest_commit_time`"
+                    },
+                    {
+                      "name": "total_files",
+                      "expression": "`total_files`"
+                    },
+                    {
+                      "name": "total_size_bytes",
+                      "expression": "`total_size_bytes`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Latest Processing per Source"
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "source"
+                  },
+                  {
+                    "fieldName": "latest_processed_time"
+                  },
+                  {
+                    "fieldName": "latest_commit_time"
+                  },
+                  {
+                    "fieldName": "total_files"
+                  },
+                  {
+                    "fieldName": "total_size_bytes"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 5,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "total_files_counter",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "autoloader_metadata",
+                  "fields": [
+                    {
+                      "name": "count(path)",
+                      "expression": "COUNT(`path`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Total Files Processed"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(path)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "status_breakdown",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "autoloader_metadata",
+                  "fields": [
+                    {
+                      "name": "count(path)",
+                      "expression": "COUNT(`path`)"
+                    },
+                    {
+                      "name": "ingestion_state",
+                      "expression": "`ingestion_state`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Processing Status Breakdown"
+              },
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "count(path)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "path"
+                },
+                "color": {
+                  "fieldName": "ingestion_state",
+                  "displayName": "ingestion_state",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 5,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "recent_files",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "autoloader_metadata",
+                  "fields": [
+                    {
+                      "name": "source",
+                      "expression": "`source`"
+                    },
+                    {
+                      "name": "path",
+                      "expression": "`path`"
+                    },
+                    {
+                      "name": "size",
+                      "expression": "`size`"
+                    },
+                    {
+                      "name": "processed_time",
+                      "expression": "`processed_time`"
+                    },
+                    {
+                      "name": "ingestion_state",
+                      "expression": "`ingestion_state`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Recent Files Processed"
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "source"
+                  },
+                  {
+                    "fieldName": "path"
+                  },
+                  {
+                    "fieldName": "size"
+                  },
+                  {
+                    "fieldName": "processed_time"
+                  },
+                  {
+                    "fieldName": "ingestion_state"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 19,
+            "width": 7,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "source_filter",
+            "queries": [
+              {
+                "name": "dashboards/01f1c0912b52154f9e1f2f6c26ec863a/datasets/01f1c091f0b31bd7bcfc77b4334848f7_source",
+                "query": {
+                  "datasetName": "autoloader_metadata",
+                  "fields": [
+                    {
+                      "name": "source",
+                      "expression": "`source`"
+                    },
+                    {
+                      "name": "source_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Source Filter"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "source",
+                    "queryName": "dashboards/01f1c0912b52154f9e1f2f6c26ec863a/datasets/01f1c091f0b31bd7bcfc77b4334848f7_source"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "time_filter",
+            "queries": [
+              {
+                "name": "dashboards/01f1c0912b52154f9e1f2f6c26ec863a/datasets/01f1c091f0b31bd7bcfc77b4334848f7_processed_time",
+                "query": {
+                  "datasetName": "autoloader_metadata",
+                  "fields": [
+                    {
+                      "name": "processed_time",
+                      "expression": "`processed_time`"
+                    },
+                    {
+                      "name": "processed_time_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Processing Time Filter",
+                  "fields": []
+                }
+              },
+              "widgetType": "filter-date-range-picker",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "processed_time",
+                    "queryName": "dashboards/01f1c0912b52154f9e1f2f6c26ec863a/datasets/01f1c091f0b31bd7bcfc77b4334848f7_processed_time"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
