@@ -21,6 +21,8 @@ target_table = "retail_demo.gold.promotion_impact"
 
 promotion_sales = spark_session.table(source_table)
 
+# Validate the Silver contract before starting any aggregation. Percentage
+# columns use whole percentage points, for example 10 means 10%.
 required_columns = {
     "product_id",
     "product_name",
@@ -57,6 +59,9 @@ if invalid_percentage:
         "discount_pct and gross_margin_pct must be between 0 and 100"
     )
 
+# Establish one baseline per product across all rows classified as Baseline.
+# These totals are assigned to every promotion for the same product so that
+# promotion performance can be compared with non-promotion performance.
 baseline_by_product = (
     promotion_sales.filter(F.col("promotion") == "Baseline")
     .groupBy("product_id")
@@ -66,6 +71,9 @@ baseline_by_product = (
     )
 )
 
+# Establish one row per product and promotion. Descriptive attributes are
+# aggregated with max() so they do not alter the (product_id, promotion_id)
+# grain required by the target MERGE.
 promotion_by_product = (
     promotion_sales.filter(F.col("promotion") == "Promotion")
     .filter(F.col("promotion_id").isNotNull())
@@ -89,6 +97,9 @@ promotion_by_product = (
 
 # COMMAND ----------
 
+# Attach each product's baseline to all its promotions. A product with no
+# Baseline rows receives zero baseline units and revenue. Null investment is
+# also normalized to zero so downstream metrics have deterministic inputs.
 promotion_with_baseline = (
     promotion_by_product.join(
         baseline_by_product,
@@ -106,10 +117,14 @@ promotion_with_baseline = (
 )
 
 promotion_with_metrics = (
+    # Additional units sold during the promotion compared with the product's
+    # aggregated baseline units. Negative values indicate underperformance.
     promotion_with_baseline.withColumn(
         "incremental_units",
         F.col("promotion_units") - F.col("baseline_units"),
     )
+    # Average realized selling price for promotion units. A zero-unit
+    # promotion returns NULL to avoid division by zero.
     .withColumn(
         "net_selling_price",
         F.when(
@@ -117,15 +132,21 @@ promotion_with_metrics = (
             F.col("promotion_revenue") / F.col("promotion_units"),
         ).otherwise(F.lit(None).cast("double")),
     )
+    # Revenue attributable to units above or below baseline, valued at the
+    # average promotion selling price.
     .withColumn(
         "incremental_revenue",
         F.col("incremental_units") * F.col("net_selling_price"),
     )
+    # Profit associated with incremental revenue. gross_margin_pct is stored
+    # as percentage points, so it is divided by 100 before multiplication.
     .withColumn(
         "incremental_gross_profit",
         F.col("incremental_revenue")
         * (F.col("gross_margin_pct") / F.lit(100.0)),
     )
+    # Percentage change in promotion revenue relative to baseline revenue.
+    # A zero baseline produces NULL because percentage uplift is undefined.
     .withColumn(
         "revenue_uplift_pct",
         F.when(
@@ -140,6 +161,8 @@ promotion_with_metrics = (
             * F.lit(100.0),
         ).otherwise(F.lit(None).cast("double")),
     )
+    # Percentage change in promotion units relative to baseline units.
+    # A zero baseline produces NULL because percentage uplift is undefined.
     .withColumn(
         "unit_uplift_pct",
         F.when(
@@ -154,6 +177,8 @@ promotion_with_metrics = (
             * F.lit(100.0),
         ).otherwise(F.lit(None).cast("double")),
     )
+    # Classify effectiveness from unrounded revenue uplift: at least 20% is
+    # HIGH, positive but below 20% is MEDIUM, and all other cases are LOW.
     .withColumn(
         "promotion_effectiveness",
         F.when(
@@ -166,6 +191,8 @@ promotion_with_metrics = (
         )
         .otherwise(F.lit("LOW")),
     )
+    # Round percentage outputs only after all calculations and classifications
+    # so displayed precision does not affect business-rule thresholds.
     .withColumn("discount_pct", F.round("discount_pct", 2))
     .withColumn(
         "gross_margin_pct",
@@ -212,6 +239,8 @@ promotion_with_metrics.createOrReplaceTempView(
 
 # COMMAND ----------
 
+# The Gold table is fully derived. Recreate it when its columns differ from the
+# current output so renamed or newly added metrics do not break the MERGE.
 if spark_session.catalog.tableExists(target_table):
     target_columns = set(spark_session.table(target_table).columns)
     source_columns = set(promotion_with_metrics.columns)
@@ -230,6 +259,8 @@ spark_session.sql(
     """
 )
 
+# Synchronize the target at the (product_id, promotion_id) grain: update current
+# promotions, insert new ones, and delete promotions no longer found in Silver.
 spark_session.sql(
     f"""
     MERGE INTO {target_table} AS target
