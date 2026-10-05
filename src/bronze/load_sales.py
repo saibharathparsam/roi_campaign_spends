@@ -49,10 +49,7 @@ sales_stream = (
     .load(source_path)
     .selectExpr(
         "*",
-        "_metadata.file_path AS _source_file_path",
         "_metadata.file_name AS _source_file_name",
-        "_metadata.file_size AS _source_file_size",
-        "_metadata.file_modification_time AS _source_file_modified_at",
         "current_timestamp() AS _ingested_at",
     )
 )
