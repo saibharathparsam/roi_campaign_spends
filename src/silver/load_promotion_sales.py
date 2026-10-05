@@ -19,6 +19,7 @@ dbutils_runtime: Any = globals()["dbutils"]
 source_sales_table = "retail_demo.bronze.sales"
 source_product_table = "retail_demo.bronze.product"
 source_promotions_table = "retail_demo.bronze.promotions"
+source_store_table = "retail_demo.bronze.store"
 target_table = "retail_demo.silver.promotion_sales"
 checkpoint_path = (
     "/Volumes/retail_demo/bronze/raw_data/_checkpoints/"
@@ -46,6 +47,58 @@ if is_reprocess_value == "true":
 
 # COMMAND ----------
 
+def require_columns(
+    table_name: str,
+    required_columns: set[str],
+) -> None:
+    available_columns = set(spark_session.table(table_name).columns)
+    missing_columns = required_columns.difference(available_columns)
+    if missing_columns:
+        raise ValueError(
+            f"{table_name} is missing required columns: "
+            + ", ".join(sorted(missing_columns))
+        )
+
+
+require_columns(
+    source_sales_table,
+    {
+        "sale_id",
+        "sale_date",
+        "store_id",
+        "product_id",
+        "units_sold",
+        "revenue",
+    },
+)
+require_columns(
+    source_store_table,
+    {"store_id", "store_name"},
+)
+require_columns(
+    source_product_table,
+    {
+        "product_id",
+        "product_name",
+        "category",
+        "regular_price",
+        "gross_margin_pct",
+    },
+)
+require_columns(
+    source_promotions_table,
+    {
+        "promotion_id",
+        "product_id",
+        "promotion_name",
+        "discount_pct",
+        "start_date",
+        "end_date",
+    },
+)
+
+# COMMAND ----------
+
 spark_session.sql(
     f"""
     CREATE TABLE IF NOT EXISTS {target_table}
@@ -56,6 +109,7 @@ spark_session.sql(
         s.sale_id,
         s.sale_date,
         s.store_id,
+        store.store_name,
         s.product_id,
         product.product_name,
         product.category,
@@ -71,6 +125,8 @@ spark_session.sql(
         CAST(NULL AS STRING) AS promotion,
         current_timestamp() AS silver_ingested_at
     FROM {source_sales_table} AS s
+    LEFT JOIN {source_store_table} AS store
+        ON s.store_id = store.store_id
     LEFT JOIN {source_product_table} AS product
         ON s.product_id = product.product_id
     LEFT JOIN {source_promotions_table} AS promotion
@@ -79,6 +135,11 @@ spark_session.sql(
     WHERE 1 = 0
     """
 )
+
+if "store_name" not in spark_session.table(target_table).columns:
+    spark_session.sql(
+        f"ALTER TABLE {target_table} ADD COLUMNS (store_name STRING)"
+    )
 
 # COMMAND ----------
 
@@ -93,6 +154,8 @@ def latest_by_key(
         order_columns.append(
             F.col("_source_file_modified_at").desc_nulls_last()
         )
+    if "_updated_at" in data_frame.columns:
+        order_columns.append(F.col("_updated_at").desc_nulls_last())
 
     if not order_columns:
         return data_frame.dropDuplicates(key_columns)
@@ -114,12 +177,22 @@ def merge_promotion_sales_batch(
     micro_batch_df: Any,
     batch_id: int,
 ) -> None:
-    del batch_id
+    if micro_batch_df.filter(
+        F.col("sale_id").isNull()
+        | F.col("sale_date").isNull()
+    ).limit(1).count():
+        raise ValueError(
+            f"Batch {batch_id} contains null sale_id or sale_date values"
+        )
 
     sales = latest_by_key(
         micro_batch_df,
         ["sale_id", "sale_date"],
     ).alias("sales")
+    stores = latest_by_key(
+        spark_session.table(source_store_table),
+        ["store_id"],
+    ).alias("store")
     products = latest_by_key(
         spark_session.table(source_product_table),
         ["product_id"],
@@ -139,6 +212,11 @@ def merge_promotion_sales_batch(
 
     final_result = (
         sales.join(
+            stores,
+            F.col("sales.store_id") == F.col("store.store_id"),
+            "left",
+        )
+        .join(
             products,
             F.col("sales.product_id") == F.col("product.product_id"),
             "left",
@@ -148,6 +226,7 @@ def merge_promotion_sales_batch(
             F.col("sales.sale_id").alias("sale_id"),
             F.col("sales.sale_date").alias("sale_date"),
             F.col("sales.store_id").alias("store_id"),
+            F.col("store.store_name").alias("store_name"),
             F.col("sales.product_id").alias("product_id"),
             F.col("product.product_name").alias("product_name"),
             F.col("product.category").alias("category"),
@@ -174,6 +253,14 @@ def merge_promotion_sales_batch(
             F.current_timestamp().alias("silver_ingested_at"),
         )
     )
+
+    if final_result.groupBy("sale_id", "sale_date").count().filter(
+        F.col("count") > 1
+    ).limit(1).count():
+        raise ValueError(
+            f"Batch {batch_id} contains multiple rows for the same "
+            "sale_id and sale_date, likely from overlapping promotions"
+        )
 
     final_result.createOrReplaceTempView(
         "promotion_sales_micro_batch"

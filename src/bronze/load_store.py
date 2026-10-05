@@ -1,9 +1,9 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Load customers from Azure SQL
+# MAGIC # Load stores from Azure SQL
 # MAGIC
-# MAGIC Reads the current customer dataset from Azure SQL and incrementally merges
-# MAGIC new and changed rows into `retail_demo.bronze.customer`.
+# MAGIC Reads the current store dataset from Azure SQL and incrementally merges
+# MAGIC new and changed rows into `retail_demo.bronze.store`.
 
 # COMMAND ----------
 
@@ -13,7 +13,7 @@ from typing import Any
 spark_session: Any = globals()["spark"]
 dbutils_runtime: Any = globals()["dbutils"]
 
-target_table = "retail_demo.bronze.customer"
+target_table = "retail_demo.bronze.store"
 
 # COMMAND ----------
 
@@ -27,11 +27,11 @@ dbutils_runtime.widgets.text(
     "customer",
     "Azure SQL database",
 )
-dbutils_runtime.widgets.text("source_table", "dbo.testtable", "Source table")
+dbutils_runtime.widgets.text("source_table", "dbo.store", "Source table")
 dbutils_runtime.widgets.text(
-    "customer_id_column",
-    "Id",
-    "Customer ID column",
+    "store_id_column",
+    "store_id",
+    "Store ID column",
 )
 dbutils_runtime.widgets.text(
     "sql_username",
@@ -47,8 +47,8 @@ dbutils_runtime.widgets.text(
 sql_server = dbutils_runtime.widgets.get("sql_server").strip()
 sql_database = dbutils_runtime.widgets.get("sql_database").strip()
 source_table = dbutils_runtime.widgets.get("source_table").strip()
-customer_id_column = (
-    dbutils_runtime.widgets.get("customer_id_column").strip()
+store_id_column = (
+    dbutils_runtime.widgets.get("store_id_column").strip()
 )
 sql_username = dbutils_runtime.widgets.get("sql_username").strip()
 sql_password = dbutils_runtime.widgets.get("sql_password")
@@ -57,7 +57,7 @@ required_values = {
     "sql_server": sql_server,
     "sql_database": sql_database,
     "source_table": source_table,
-    "customer_id_column": customer_id_column,
+    "store_id_column": store_id_column,
     "sql_username": sql_username,
     "sql_password": sql_password,
 }
@@ -78,7 +78,7 @@ jdbc_url = (
     "loginTimeout=30;"
 )
 
-customer_source = (
+store_source = (
     spark_session.read.format("jdbc")
     .option("url", jdbc_url)
     .option("dbtable", source_table)
@@ -88,29 +88,42 @@ customer_source = (
     .load()
 )
 
-if customer_id_column not in customer_source.columns:
+expected_columns = {
+    "store_id",
+    "store_name",
+    "store_location",
+    "store_zip",
+}
+missing_columns = expected_columns.difference(store_source.columns)
+if missing_columns:
     raise ValueError(
-        f"Customer ID column '{customer_id_column}' does not exist in "
+        f"Azure SQL table '{source_table}' is missing columns: "
+        + ", ".join(sorted(missing_columns))
+    )
+
+if store_id_column not in store_source.columns:
+    raise ValueError(
+        f"Store ID column '{store_id_column}' does not exist in "
         f"Azure SQL table '{source_table}'"
     )
 
-if customer_source.filter(
-    customer_source[customer_id_column].isNull()
+if store_source.filter(
+    store_source[store_id_column].isNull()
 ).limit(1).count():
     raise ValueError(
-        f"Customer ID column '{customer_id_column}' contains null values"
+        f"Store ID column '{store_id_column}' contains null values"
     )
 
-if customer_source.groupBy(customer_id_column).count().filter(
+if store_source.groupBy(store_id_column).count().filter(
     "count > 1"
 ).limit(1).count():
     raise ValueError(
-        f"Customer ID column '{customer_id_column}' is not unique"
+        f"Store ID column '{store_id_column}' is not unique"
     )
 
 # COMMAND ----------
 
-customer_source.createOrReplaceTempView("azure_sql_customer_source")
+store_source.createOrReplaceTempView("azure_sql_store_source")
 
 if not spark_session.catalog.tableExists(target_table):
     spark_session.sql(
@@ -122,21 +135,21 @@ if not spark_session.catalog.tableExists(target_table):
             source.*,
             current_timestamp() AS _created_at,
             current_timestamp() AS _updated_at
-        FROM azure_sql_customer_source AS source
+        FROM azure_sql_store_source AS source
         WHERE 1 = 0
         """
     )
 
 # COMMAND ----------
 
-source_columns = customer_source.columns
+source_columns = store_source.columns
 quoted_source_columns = [
     f"`{column.replace('`', '``')}`" for column in source_columns
 ]
 update_assignments = ",\n            ".join(
     f"target.{column} = source.{column}"
     for column in quoted_source_columns
-    if column != f"`{customer_id_column.replace('`', '``')}`"
+    if column != f"`{store_id_column.replace('`', '``')}`"
 )
 insert_columns = ", ".join(
     quoted_source_columns + ["`_created_at`", "`_updated_at`"]
@@ -145,7 +158,7 @@ insert_values = ", ".join(
     [f"source.{column}" for column in quoted_source_columns]
     + ["current_timestamp()", "current_timestamp()"]
 )
-quoted_customer_id = f"`{customer_id_column.replace('`', '``')}`"
+quoted_store_id = f"`{store_id_column.replace('`', '``')}`"
 
 matched_clause = ""
 if update_assignments:
@@ -158,8 +171,8 @@ if update_assignments:
 spark_session.sql(
     f"""
     MERGE INTO {target_table} AS target
-    USING azure_sql_customer_source AS source
-        ON target.{quoted_customer_id} <=> source.{quoted_customer_id}
+    USING azure_sql_store_source AS source
+        ON target.{quoted_store_id} <=> source.{quoted_store_id}
     {matched_clause}
     WHEN NOT MATCHED THEN INSERT ({insert_columns})
     VALUES ({insert_values})
