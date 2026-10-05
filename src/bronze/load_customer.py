@@ -33,16 +33,15 @@ dbutils_runtime.widgets.text(
     "Id",
     "Customer ID column",
 )
-dbutils_runtime.widgets.text("secret_scope", "", "Databricks secret scope")
 dbutils_runtime.widgets.text(
-    "username_secret_key",
-    "azure-sql-username",
-    "Username secret key",
+    "sql_username",
+    "",
+    "Azure SQL username",
 )
 dbutils_runtime.widgets.text(
-    "password_secret_key",
-    "azure-sql-password",
-    "Password secret key",
+    "sql_password",
+    "",
+    "Azure SQL password",
 )
 
 sql_server = dbutils_runtime.widgets.get("sql_server").strip()
@@ -51,22 +50,16 @@ source_table = dbutils_runtime.widgets.get("source_table").strip()
 customer_id_column = (
     dbutils_runtime.widgets.get("customer_id_column").strip()
 )
-secret_scope = dbutils_runtime.widgets.get("secret_scope").strip()
-username_secret_key = (
-    dbutils_runtime.widgets.get("username_secret_key").strip()
-)
-password_secret_key = (
-    dbutils_runtime.widgets.get("password_secret_key").strip()
-)
+sql_username = dbutils_runtime.widgets.get("sql_username").strip()
+sql_password = dbutils_runtime.widgets.get("sql_password")
 
 required_values = {
     "sql_server": sql_server,
     "sql_database": sql_database,
     "source_table": source_table,
     "customer_id_column": customer_id_column,
-    "secret_scope": secret_scope,
-    "username_secret_key": username_secret_key,
-    "password_secret_key": password_secret_key,
+    "sql_username": sql_username,
+    "sql_password": sql_password,
 }
 missing_values = [
     name for name, value in required_values.items() if not value
@@ -75,17 +68,6 @@ if missing_values:
     raise ValueError(
         "Missing required parameters: " + ", ".join(missing_values)
     )
-
-# COMMAND ----------
-
-sql_username = dbutils_runtime.secrets.get(
-    scope=secret_scope,
-    key=username_secret_key,
-)
-sql_password = dbutils_runtime.secrets.get(
-    scope=secret_scope,
-    key=password_secret_key,
-)
 
 jdbc_url = (
     f"jdbc:sqlserver://{sql_server}:1433;"
