@@ -143,7 +143,7 @@ promotion_with_metrics = (
     .withColumn(
         "incremental_gross_profit",
         F.col("incremental_revenue")
-        * (F.col("gross_margin_pct") / F.lit(100.0)),
+        * ( (F.col("gross_margin_pct") - F.col("discount_pct")) / F.lit(100.0)),
     )
     # Percentage change in promotion revenue relative to baseline revenue.
     # A zero baseline produces NULL because percentage uplift is undefined.
