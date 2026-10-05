@@ -157,6 +157,7 @@ def merge_promotion_sales_batch(
             ),
             F.col("promotion.promotion_id").alias("promotion_id"),
             F.col("promotion.discount_pct").alias("discount_pct"),
+            F.col("promotion.promotion_name").alias("promotion_name"),
             F.col("sales.units_sold").alias("units_sold"),
             F.col("sales.revenue").alias("revenue"),
             (
