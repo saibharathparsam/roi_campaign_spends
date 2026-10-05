@@ -130,7 +130,7 @@ def merge_promotion_sales_batch(
     ).alias("promotion")
 
     promotion_match = (
-        (F.col("sales.promotion_id") == F.col("promotion.promotion_id"))
+        (F.col("sales.product_id") == F.col("promotion.product_id"))
         & F.col("sales.sale_date").between(
             F.col("promotion.start_date"),
             F.col("promotion.end_date"),
