@@ -138,7 +138,7 @@ promotion_with_metrics = (
         "incremental_revenue",
         F.col("incremental_units") * F.col("net_selling_price"),
     )
-    # Profit associated with incremental revenue. gross_margin_pct is stored
+    # Profit associated with incremental revenue. gross_margin_pct - discount_pct is stored
     # as percentage points, so it is divided by 100 before multiplication.
     .withColumn(
         "incremental_gross_profit",
