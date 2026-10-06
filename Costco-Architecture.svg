@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="920" viewBox="0 0 1600 920" role="img" aria-labelledby="title desc">
+  <title id="title">Costco retail intelligence: promotion impact and member churn</title>
+  <desc id="desc">User-reported prototype architecture. Azure SQL stores enter bronze through a JDBC notebook. Sales, product, and promotion files in Unity Catalog volumes enter bronze through Auto Loader. A churn flat file enters bronze through a notebook. Silver promotion_Sales feeds gold promotions_impact with actual-versus-baseline metrics, category promotion success rates, and historical promotion analysis. A Random Forest notebook reads bronze churn data and writes global feature importance to silver model_findings. Genie queries both existing silver tables. Unity Catalog governs data; Databricks jobs orchestrate notebooks.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0L8 4L0 8Z" fill="#526879"/>
+    </marker>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #102a43; }
+      .title { font-size: 36px; font-weight: 700; }
+      .sub { font-size: 19px; fill: #526879; }
+      .label { font-size: 16px; font-weight: 700; letter-spacing: 1.2px; }
+      .head { font-size: 20px; font-weight: 700; }
+      .body { font-size: 18px; }
+      .small { font-size: 16px; fill: #526879; }
+      .white { fill: #ffffff; }
+      .line { fill: none; stroke: #526879; stroke-width: 2.5; marker-end: url(#arrow); }
+      .box { fill: #ffffff; stroke: #d6e1e8; stroke-width: 1.5; rx: 12; }
+    </style>
+  </defs>
+  <rect width="1600" height="1080" fill="#f7fafc"/>
+  <rect x="0" y="0" width="1600" height="12" fill="#087f8c"/>
+  <text x="50" y="66" class="title">Promotion impact + member intelligence</text>
+  <text x="50" y="101" class="sub">Hypothetical Costco regional pilot | Promotion insights + customer churn</text>
+  <text x="50" y="155" class="label">SOURCES</text>
+  <text x="320" y="155" class="label">INGEST + BRONZE</text>
+  <text x="700" y="155" class="label">SILVER + PREDICTIVE ML</text>
+  <text x="1060" y="155" class="label">GOLD</text>
+  <text x="1340" y="155" class="label">BUSINESS EXPERIENCE</text>
+
+  <rect x="50" y="182" width="220" height="110" class="box"/>
+  <text x="70" y="220" class="head">Azure SQL</text>
+  <text x="70" y="252" class="body">Store data</text>
+  <rect x="50" y="332" width="220" height="132" class="box"/>
+  <text x="70" y="369" class="head">UC volumes</text>
+  <text x="70" y="401" class="body">Sales / product /</text>
+  <text x="70" y="429" class="body">promotion files</text>
+  <rect x="50" y="504" width="220" height="110" class="box"/>
+  <text x="70" y="542" class="head">Flat file</text>
+  <text x="70" y="575" class="body">Customer / churn</text>
+
+  <rect x="320" y="182" width="318" height="432" fill="#fff9ef" stroke="#e8d6b4" rx="12"/>
+  <text x="340" y="220" class="head">Notebook ingestion</text>
+  <text x="340" y="254" class="body">JDBC: stores</text>
+  <text x="340" y="390" class="body">Auto Loader: volume files</text>
+  <text x="340" y="548" class="body">Notebook: churn file</text>
+  <rect x="340" y="279" width="278" height="70" fill="#f3e5cb" rx="8"/>
+  <text x="358" y="309" class="head">bronze Delta tables</text>
+  <text x="358" y="334" class="small">Raw records + ingest metadata</text>
+  <text x="340" y="442" class="small">Schema / data-quality checks</text>
+  <text x="340" y="584" class="small">Raw churn retained in bronze</text>
+  <path d="M270 237H312" class="line"/>
+  <path d="M270 398H312" class="line"/>
+  <path d="M270 559H312" class="line"/>
+
+  <rect x="700" y="205" width="300" height="170" fill="#eef6f8" stroke="#b8d6dc" rx="12"/>
+  <text x="720" y="242" class="head">silver.promotion_Sales</text>
+  <text x="720" y="277" class="body">Sales + stores + products</text>
+  <text x="720" y="306" class="body">+ promotions</text>
+  <text x="720" y="345" class="small">Non-aggregated OBT</text>
+  <path d="M638 295H692" class="line"/>
+
+  <rect x="700" y="438" width="300" height="190" fill="#eef6f8" stroke="#b8d6dc" rx="12"/>
+  <text x="720" y="474" class="head">Random Forest notebook</text>
+  <text x="720" y="508" class="body">Training / findings pipeline</text>
+  <path d="M850 518V546" class="line"/>
+  <text x="720" y="575" class="head">silver.model_findings</text>
+  <text x="720" y="605" class="small">Global feature importance</text>
+  <path d="M638 559H692" class="line"/>
+
+  <rect x="1060" y="205" width="228" height="170" fill="#fff6da" stroke="#e4ce86" rx="12"/>
+  <text x="1078" y="243" class="head">gold.</text>
+  <text x="1078" y="272" class="head">promotions_impact</text>
+  <text x="1078" y="309" class="body">Actual vs baseline</text>
+  <text x="1078" y="337" class="small">Category success rate</text>
+  <text x="1078" y="361" class="small">Historical analysis</text>
+  <path d="M1000 289H1052" class="line"/>
+
+  <rect x="1340" y="205" width="210" height="170" fill="#087f8c" rx="12"/>
+  <text x="1359" y="246" class="head white">Promotion</text>
+  <text x="1359" y="276" class="head white">dashboard</text>
+  <text x="1359" y="312" class="small white">Category success rate</text>
+  <text x="1359" y="338" class="small white">Historical promotions</text>
+  <text x="1359" y="364" class="small white">Repeat / adjust / stop</text>
+  <path d="M1288 289H1332" class="line"/>
+
+  <rect x="1060" y="438" width="490" height="190" fill="#e5f4f2" stroke="#abd6ce" rx="12"/>
+  <text x="1080" y="476" class="head">Genie agent | Natural-language Q&amp;A</text>
+  <text x="1080" y="512" class="body">Current: both silver tables</text>
+  <text x="1080" y="545" class="body">Promotion detail + global model signals</text>
+  <text x="1080" y="590" class="small">Governed query access; inspect generated SQL</text>
+  <path d="M1000 559H1052" class="line"/>
+  <path d="M970 375V410H1020V491H1052" class="line"/>
+
+  <rect x="50" y="678" width="1500" height="70" fill="#102a43" rx="10"/>
+  <text x="70" y="707" class="head white">Unity Catalog: retail_demo</text>
+  <text x="70" y="733" class="body white">bronze / silver / gold schemas + schema-scoped volumes | Access control and PII column masking</text>
+  <rect x="50" y="764" width="1500" height="76" fill="#e8eef3" rx="10"/>
+  <text x="70" y="794" class="body">Databricks orchestration: notebook jobs / pipelines | Quality + schema checks at each layer</text>
+  <text x="70" y="822" class="body">Operations: file-processing dashboard | Development: VS Code + Databricks Connect + GitHub + Copilot / Genie Code</text>
+  <text x="50" y="882" class="small">Volumes govern files; Delta tables hold analytical data.</text>
+</svg>
